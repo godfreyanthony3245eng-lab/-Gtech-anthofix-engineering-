@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FixIt Platform - Complete Hardware Repair & Verification Suite</title>
+    <!-- FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #0b132b;
+            --bg-card: #1c2541;
+            --bg-hover: #3a506b;
+            --accent-primary: #4cc9f0;
+            --accent-secondary: #7209b7;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --border-color: #3a506b;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+            --transition: all 0.3s ease;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; padding-bottom: 3rem; }
+        .hidden { display: none !important; }
+
+        /* Header Navigation */
+        header.app-header {
+            background-color: rgba(28, 37, 65, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky; top: 0; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+        }
+        .brand-logo { display: flex; align-items: center; gap: 12px; font-size: 1.5rem; font-weight: 800; color: var(--accent-primary); text-decoration: none; }
+        .nav-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+        .nav-btn {
+            background: transparent; color: var(--text-muted); border: 1px solid var(--border-color);
+            padding: 8px 16px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition);
+            display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.9rem;
+        }
+        .nav-btn:hover, .nav-btn.active { background: var(--accent-primary); color: #000; border-color: var(--accent-primary); }
+
+        /* Main Container */
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+
+        /* Card System */
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        .card-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; color: var(--accent-primary); }
+        .card-subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem; }
+
+        /* Form & Control Styling */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; }
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.88rem; font-weight: 600; }
+        .form-control {
+            width: 100%; padding: 12px 14px; background: var(--bg-main); border: 1px solid var(--border-color);
+            border-radius: var(--radius-md); color: var(--text-main); outline: none; transition: var(--transition);
+        }
+        .form-control:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.2); }
+
+        /* Button Styling */
+        .btn {
+            padding: 12px 22px; border: none; border-radius: var(--radius-md); font-weight: 700;
+            cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem;
+        }
+        .btn-primary { background: var(--accent-primary); color: #000; }
+        .btn-secondary { background: var(--accent-secondary); color: #fff; }
+        .btn-success { background: var(--accent-success); color: #fff; }
+        .btn-warning { background: var(--accent-warning); color: #000; }
+        .btn-danger { background: var(--accent-danger); color: #fff; }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        /* Badge Styling */
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-pending { background: rgba(245, 158, 11, 0.2); color: var(--accent-warning); border: 1px solid var(--accent-warning); }
+        .badge-approved { background: rgba(16, 185, 129, 0.2); color: var(--accent-success); border: 1px solid var(--accent-success); }
+
+        /* Media Player Component */
+        .video-player-box { background: #000; border-radius: var(--radius-md); overflow: hidden; position: relative; margin-top: 1rem; border: 1px solid var(--border-color); }
+        video { width: 100%; max-height: 480px; display: block; }
+        .video-controls { padding: 12px; background: var(--bg-card); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+        /* Table Styling */
+        .table-responsive { overflow-x: auto; margin-top: 1rem; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 14px; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; }
+        th { background: var(--bg-main); color: var(--text-muted); font-weight: 600; }
+
+        /* AI Voice & Terminal Box */
+        .terminal-box {
+            background: #050a14; border: 1px solid var(--border-color); border-radius: var(--radius-md);
+            padding: 1.2rem; font-family: 'Courier New', Courier, monospace; color: #4cc9f0; min-height: 120px;
+            max-height: 250px; overflow-y: auto; margin-top: 1rem; white-space: pre-wrap;
+        }
+
+        /* Toast Alerts */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: var(--bg-card); color: #fff; padding: 1rem 1.5rem; border-left: 4px solid var(--accent-primary); border-radius: 6px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+    <!-- APPLICATION HEADER NAVIGATION -->
+    <header class="app-header">
+        <a href="#" class="brand-logo">
+            <i class="fa-solid fa-microchip"></i>
+            <span>FixIt Enterprise Hub</span>
+        </a>
+        <div class="nav-tabs">
+            <button class="nav-btn active" onclick="App.switchTab('ai-diagnostics')"><i class="fa-solid fa-brain"></i> AI Diagnostics</button>
+            <button class="nav-btn" onclick="App.switchTab('video-hub')"><i class="fa-solid fa-circle-play"></i> Training Videos</button>
+            <button class="nav-btn" onclick="App.switchTab('payment-approval')"><i class="fa-solid fa-receipt"></i> Receipts & SMS</button>
+            <button class="nav-btn" onclick="App.switchTab('user-register')"><i class="fa-solid fa-user-plus"></i> Registration</button>
+            <button class="nav-btn" onclick="App.switchTab('admin-panel')"><i class="fa-solid fa-user-shield"></i> Admin Control</button>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- TAB 1: AI DIAGNOSTIC ASSISTANT WITH VOICE SYNTHESIS -->
+        <section id="tab-ai-diagnostics" class="tab-content">
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-robot"></i> AI Hardware Diagnostic Engine</div>
+                <div class="card-subtitle">Select hardware symptoms or speak into your microphone to run automated diagnostic routines.</div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Target Hardware Device</label>
+                        <select id="diag-device" class="form-control">
+                            <option value="smartphone">Smartphone / Tablet</option>
+                            <option value="laptop">Laptop / PC Logic Board</option>
+                            <option value="powerbank">Custom Lithium Power Bank</option>
+                            <option value="logic-gate">Transistor & Binary Decoder Circuit</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Observed Failure Pattern</label>
+                        <select id="diag-symptom" class="form-control">
+                            <option value="no-power">No Power / Dead Circuit</option>
+                            <option value="overheating">Thermal Throttling / Excessive Heat</option>
+                            <option value="short-circuit">VCC to GND Short Circuit</option>
+                            <option value="display-flicker">Display Signal Loss / Backlight Failure</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="App.runAIDiagnostics()"><i class="fa-solid fa-magnifying-glass"></i> Run Automated Diagnostic</button>
+                    <button class="btn btn-secondary" onclick="App.startVoiceInput()"><i class="fa-solid fa-microphone"></i> Voice Command Input</button>
+                    <button class="btn btn-warning" onclick="App.speakLastReport()"><i class="fa-solid fa-volume-high"></i> Read Report Out Loud</button>
+                </div>
+
+                <div class="terminal-box" id="diag-terminal-output">> Diagnostic Engine Ready. Select parameters and click Run...</div>
+            </div>
+        </section>
+
+        <!-- TAB 2: HARDWARE REPAIR VIDEO TUTORIAL HUB -->
+        <section id="tab-video-hub" class="tab-content hidden">
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-video"></i> Video Training & Hardware Demonstrations</div>
+                <div class="card-subtitle">Stream repair guides or load custom local MP4/WebM video files directly inside the hub.</div>
+
+                <div class="form-group">
+                    <label>Load Video via URL Stream or File Upload</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="text" id="video-url-input" class="form-control" placeholder="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" style="flex: 1;">
+                        <button class="btn btn-primary" onclick="App.loadVideoURL()"><i class="fa-solid fa-link"></i> Stream URL</button>
+                        <input type="file" id="local-video-file" accept="video/*" class="hidden" onchange="App.loadLocalVideo(event)">
+                        <button class="btn btn-secondary" onclick="document.getElementById('local-video-file').click()"><i class="fa-solid fa-file-video"></i> Load Local Video</button>
+                    </div>
+                </div>
+
+                <div class="video-player-box">
+                    <video id="main-video-player" controls>
+                        <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
+                        Your browser does not support HTML5 video playback.
+                    </video>
+                    <div class="video-controls">
+                        <button class="btn btn-primary" onclick="document.getElementById('main-video-player').play()"><i class="fa-solid fa-play"></i> Play</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('main-video-player').pause()"><i class="fa-solid fa-pause"></i> Pause</button>
+                        <button class="btn btn-warning" onclick="document.getElementById('main-video-player').currentTime = 0"><i class="fa-solid fa-rotate-left"></i> Restart</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: RECEIPT VERIFICATION & SMS APPROVAL GATEWAY -->
+        <section id="tab-payment-approval" class="tab-content hidden">
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-file-invoice-dollar"></i> Step 1: Submit Payment Slip for Approval</div>
+                <div class="card-subtitle">Upload transfer receipt details. Once confirmed by administration, an SMS approval code and GitHub link will be dispatched.</div>
+
+                <form onsubmit="App.handleReceiptSubmission(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Full Customer Name</label>
+                            <input type="text" id="cust-name" class="form-control" placeholder="e.g. Godfrey Anthony" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number (Receives SMS Code)</label>
+                            <input type="tel" id="cust-phone" class="form-control" placeholder="+2348000000000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Bank Reference / Transaction ID</label>
+                            <input type="text" id="cust-ref" class="form-control" placeholder="TXN-99403218" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Receipt Proof Document</label>
+                            <input type="file" id="cust-slip-file" class="form-control" accept="image/*,.pdf" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 1rem;"><i class="fa-solid fa-paper-plane"></i> Submit Slip for Verification</button>
+                </form>
+            </div>
+
+            <!-- UNLOCK ACCESS FORM -->
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-shield-cat"></i> Step 2: Unlock Access via SMS Verification Code</div>
+                <div class="card-subtitle">Enter the 6-digit verification code sent to your mobile phone after receipt confirmation.</div>
+
+                <form onsubmit="App.handleCodeActivation(event)">
+                    <div class="form-group">
+                        <label>6-Digit Security Code</label>
+                        <input type="text" id="activation-code-input" class="form-control" placeholder="e.g. 849201">
+                    </div>
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-lock-open"></i> Unlock GitHub Destination Repository</button>
+                </form>
+
+                <div id="github-link-container" class="hidden" style="margin-top: 1.5rem; background: var(--bg-main); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--accent-success);">
+                    <h4 style="color: var(--accent-success);"><i class="fa-brands fa-github"></i> Authorized GitHub Destination Repository:</h4>
+                    <a id="github-url-display" href="#" target="_blank" style="color: var(--accent-primary); word-break: break-all; text-decoration: underline; margin-top: 5px; display: inline-block;"></a>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: CUSTOMER & REPAIRER USER REGISTRATION -->
+        <section id="tab-user-register" class="tab-content hidden">
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-id-card"></i> Platform Portal Registration</div>
+                <div class="card-subtitle">Create account profiles for both customers seeking repair services and qualified hardware repair technicians.</div>
+
+                <form onsubmit="App.handleUserRegistration(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Account Class</label>
+                            <select id="reg-role" class="form-control">
+                                <option value="Customer">Customer / Client</option>
+                                <option value="Repairer">Repairer / Hardware Technician</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Username / Handle</label>
+                            <input type="text" id="reg-username" class="form-control" placeholder="godfrey_tech" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input type="email" id="reg-email" class="form-control" placeholder="user@domain.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="reg-password" class="form-control" placeholder="••••••••••••" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-secondary" style="margin-top: 1rem;"><i class="fa-solid fa-user-check"></i> Complete Registration</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- TAB 5: ADMIN CONTROL CONSOLE (APPROVE SLIPS & SEND LIVE SMS) -->
+        <section id="tab-admin-panel" class="tab-content hidden">
+            <div class="card" style="border: 2px solid var(--accent-warning);">
+                <div class="card-title" style="color: var(--accent-warning);"><i class="fa-solid fa-user-shield"></i> Master Administrator Control Panel</div>
+                <div class="card-subtitle">Audit submitted payment receipts, confirm transaction authenticity, and trigger automatic SMS dispatch.</div>
+
+                <div class="form-group" style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-md);">
+                    <label>Live Termii / Twilio SMS API Key Hook (Optional)</label>
+                    <input type="password" id="sms-api-key" class="form-control" placeholder="Paste API Key here for live SMS dispatch (Defaults to built-in simulation)">
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Phone</th>
+                                <th>Ref ID</th>
+                                <th>File Slip</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-receipts-table">
+                            <!-- Populated Dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <div id="toast-container"></div>
+
+    <!-- ENGINE JAVASCRIPT LOGIC -->
+    <script>
+        const App = {
+            DB_SLIPS: 'fixit_slips_db_v2',
+            DB_USERS: 'fixit_users_db_v2',
+            githubRepoUrl: 'https://github.com/godfreyanthony3245eng-lab',
+            lastDiagnosticReport: '',
+
+            init: function() {
+                if (!localStorage.getItem(this.DB_SLIPS)) localStorage.setItem(this.DB_SLIPS, JSON.stringify([]));
+                if (!localStorage.getItem(this.DB_USERS)) localStorage.setItem(this.DB_USERS, JSON.stringify([]));
+                this.renderAdminTable();
+            },
+
+            showToast: function(msg) {
+                const container = docu
