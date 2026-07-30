@@ -1,0 +1,251 @@
+// Central Application Controller & OCR / Verification Engine
+const Portal = {
+    currentStep: 1,
+    selectedRole: 'Customer',
+    currentUserEmail: null,
+    currentUserName: null,
+    timerInterval: null,
+    isLoginMode: false,
+
+    compressedBase64Image: "",
+    extractedTxnId: "",
+    expectedAdminCode: null,
+
+    init: function() {
+        UIHandler.populateStates('Nigeria');
+        if (typeof emailjs !== "undefined") {
+            emailjs.init(window.APP_CONFIG.API_KEYS.EMAILJS_PUBLIC_KEY);
+        }
+        AlertHandler.log("System initialized and ready.");
+    },
+
+    // UI & Auth Delegation
+    switchAuthMode: function(mode) { AuthHandler.switchAuthMode(mode); },
+    togglePasswordVisibility: function(id, icon) { AuthHandler.togglePasswordVisibility(id, icon); },
+    showToast: function(msg) { AlertHandler.showToast(msg); },
+    updateProgress: function(step) { UIHandler.updateProgress(step); },
+    onCountryChange: function() { UIHandler.onCountryChange(); },
+    onStateChange: function() { UIHandler.onStateChange(); },
+    selectRole: function(r) { ThemeHandler.selectRole(r); },
+    startLiveCountdown: function() { AlertHandler.startLiveCountdown(); },
+
+    // Page 1: Auth Submit
+    handlePage1Submit: async function(e) {
+        e.preventDefault();
+        const email = document.getElementById('p1-email').value.trim().toLowerCase();
+        const pass = document.getElementById('p1-password').value;
+
+        if (!window.CloudDB) {
+            alert('Cloud Database module loading... Please try again in 2 seconds.');
+            return;
+        }
+
+        const { db, collection, getDocs, query, where, setDoc, doc } = window.CloudDB;
+        this.currentUserEmail = email;
+
+        if (this.isLoginMode) {
+            this.showToast('Checking Cloud Database...');
+            try {
+                const q = query(collection(db, "gtech_users"), where("email", "==", email), where("pass", "==", pass));
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    const userData = snapshot.docs[0].data();
+                    this.currentUserName = userData.username;
+                    this.showToast('Cloud Login Successful!');
+                    this.updateProgress(2);
+                } else {
+                    this.showToast('Invalid Email or Password in Cloud DB.');
+                }
+            } catch (err) {
+                console.error(err);
+                this.showToast('Database Error. Check your internet connection.');
+            }
+            return;
+        }
+
+        const username = document.getElementById('p1-username').value.trim();
+        const phone = document.getElementById('p1-phone').value.trim();
+        this.currentUserName = username;
+
+        try {
+            this.showToast('Saving to Cloud Database...');
+            await setDoc(doc(db, "gtech_users", email), {
+                username,
+                email,
+                phone,
+                pass,
+                createdAt: new Date().toISOString()
+            });
+            this.showToast('Cloud Account Created Successfully!');
+            this.updateProgress(2);
+        } catch (err) {
+            console.error(err);
+            this.showToast('Failed to save to Cloud. Check Firebase console rules.');
+        }
+    },
+
+    // Page 2: Location Submit
+    handlePage2Submit: function(e) { 
+        e.preventDefault(); 
+        this.updateProgress(3); 
+    },
+
+    // Page 3: Read File, Compress & Run Tesseract OCR Scan
+    handleFileUpload: function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const sendBtn = document.getElementById("send-btn");
+        const ocrResultDiv = document.getElementById("ocr-result");
+        const previewImg = document.getElementById("preview-img");
+        const canvas = document.getElementById("compressor-canvas");
+
+        sendBtn.disabled = true;
+        ocrResultDiv.textContent = "Scanning slip image for numbers using OCR Engine...";
+        AlertHandler.log("Processing photo from gallery...");
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = async () => {
+                const maxWidth = 400;
+                const scale = maxWidth / img.width;
+                const width = (img.width > maxWidth) ? maxWidth : img.width;
+                const height = (img.width > maxWidth) ? img.height * scale : img.height;
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, width, height);
+
+                this.compressedBase64Image = canvas.toDataURL("image/jpeg", 0.6);
+                previewImg.src = this.compressedBase64Image;
+                previewImg.style.display = "block";
+
+                AlertHandler.log("Running OCR text extraction...");
+
+                try {
+                    const worker = await Tesseract.createWorker('eng');
+                    const ret = await worker.recognize(this.compressedBase64Image);
+                    await worker.terminate();
+
+                    const rawText = ret.data.text;
+                    const matchedNumbers = rawText.match(/\b\d{6,16}\b/g);
+
+                    if (matchedNumbers && matchedNumbers.length > 0) {
+                        this.extractedTxnId = matchedNumbers[0];
+                        ocrResultDiv.innerHTML = `<span style="color:#4ade80;">Detected Txn ID: <strong>${this.extractedTxnId}</strong></span>`;
+                        AlertHandler.log(`OCR Detected Txn ID: ${this.extractedTxnId}`);
+                    } else {
+                        this.extractedTxnId = "NOT_DETECTED_" + Math.floor(1000 + Math.random() * 9000);
+                        ocrResultDiv.innerHTML = `<span style="color:#f87171;">No clear ID numbers found. Assigned ID: ${this.extractedTxnId}</span>`;
+                        AlertHandler.log("OCR finished: No explicit numbers found.");
+                    }
+
+                    sendBtn.disabled = false;
+
+                } catch (err) {
+                    AlertHandler.log(`OCR Error: ${err.message}`);
+                    ocrResultDiv.textContent = "Failed to scan image text. Try a clearer image.";
+                }
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    },
+
+    // Page 3: Send Submission via EmailJS
+    handlePage3Submit: async function(e) {
+        e.preventDefault();
+
+        const sendBtn = document.getElementById("send-btn");
+        sendBtn.disabled = true;
+        sendBtn.innerText = "Submitting...";
+
+        this.expectedAdminCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        try {
+            await window.ensureSDKLoaded();
+            window.emailjs.init(window.APP_CONFIG.API_KEYS.EMAILJS_PUBLIC_KEY);
+
+            const payload = {
+                from_name: this.currentUserName || "App User",
+                user_email: this.currentUserEmail || document.getElementById("p1-email").value,
+                message: `NEW SLIP SUBMISSION:\nExtracted Txn ID: ${this.extractedTxnId}\nAdmin Approval Code: ${this.expectedAdminCode}`,
+                verification_code: this.expectedAdminCode,
+                image_url: this.compressedBase64Image
+            };
+
+            AlertHandler.log("Sending transaction details & slip image to EmailJS...");
+
+            const sendPromise = window.emailjs.send(window.APP_CONFIG.API_KEYS.EMAILJS_SERVICE_ID, window.APP_CONFIG.API_KEYS.EMAILJS_TEMPLATE_ID, payload);
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error("Timeout waiting for server response.")), window.APP_CONFIG.API_KEYS.TIMEOUT_MS);
+            });
+
+            await Promise.race([sendPromise, timeoutPromise]);
+
+            AlertHandler.log("SUCCESS: Slip submitted. Awaiting admin code verification...");
+            document.getElementById("verify-section").style.display = "block";
+            sendBtn.innerText = "Submitted & Pending Verification";
+
+        } catch (error) {
+            sendBtn.disabled = false;
+            sendBtn.innerText = "Scan Image & Submit for Verification";
+            const errorMsg = error.text || error.message || JSON.stringify(error);
+            AlertHandler.log(`CRITICAL FAILURE: ${errorMsg}`);
+            alert("Submission failed. See logs.");
+        }
+    },
+
+    // Manual Direct Notification Button
+    triggerGmailNotification: function() {
+        const btn = document.getElementById('gmail-btn');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending Gmail...';
+        
+        const emailParams = {
+            from_name: this.currentUserName || "Cloud User",
+            user_email: this.currentUserEmail || "godfreyanthony3245.eng@gmail.com",
+            message: `User ${this.currentUserName} (${this.currentUserEmail}) has submitted their subscription payment proof. Extracted Txn ID: ${this.extractedTxnId}`
+        };
+
+        emailjs.send(window.APP_CONFIG.API_KEYS.EMAILJS_SERVICE_ID, window.APP_CONFIG.API_KEYS.EMAILJS_TEMPLATE_ID, emailParams)
+            .then(() => {
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Gmail Sent Successfully';
+                this.showToast('Real email dispatched to your inbox!');
+            })
+            .catch((err) => {
+                console.error(err);
+                btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error';
+                this.showToast('Configure your EmailJS keys to send.');
+            });
+    },
+
+    // Verify Admin Code & Generate Token
+    verifyAdminCode: function() {
+        const codeInput = document.getElementById("admin_code").value.trim();
+
+        if (codeInput === this.expectedAdminCode) {
+            AlertHandler.log("ADMIN CODE CONFIRMED! Generating user access token...");
+
+            const token = "TOKEN_SECURE_APPROVED_" + this.extractedTxnId + "_" + Date.now();
+
+            this.updateProgress(4);
+
+            const tokenDisplay = document.getElementById("token-display");
+            document.getElementById("token-text").innerText = `Token: ${token}`;
+            tokenDisplay.style.display = "block";
+
+            this.startLiveCountdown();
+            AlertHandler.log(`Transaction authenticated successfully! Generated Token: ${token}`);
+        } else {
+            AlertHandler.log("REJECTED: Code mismatch.");
+            alert("Invalid Admin Approval Code!");
+        }
+    }
+};
+
+window.Portal = Portal;
+
+document.addEventListener('DOMContentLoaded', () => Portal.init());
