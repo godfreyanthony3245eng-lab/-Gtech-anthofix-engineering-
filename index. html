@@ -3,328 +3,278 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FixIt Platform - Complete Hardware Repair & Verification Suite</title>
-    <!-- FontAwesome & Google Fonts -->
+    <title>G-Tech AnthoFix Engineering - Cloud Portal & OCR System</title>
+    <!-- FontAwesome 6 Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- EMAIL JS API SCRIPT FOR GMAIL INTEGRATION -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- Tesseract.js OCR Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    
     <style>
         :root {
-            --bg-main: #0b132b;
-            --bg-card: #1c2541;
-            --bg-hover: #3a506b;
-            --accent-primary: #4cc9f0;
-            --accent-secondary: #7209b7;
+            --bg-main: #0a0f1d;
+            --bg-card: #151d33;
+            --bg-input: #0e1628;
+            --accent-primary: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.35);
             --accent-success: #10b981;
             --accent-warning: #f59e0b;
             --accent-danger: #ef4444;
-            --text-main: #ffffff;
+            --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --border-color: #3a506b;
+            --border-color: #2a3655;
             --radius-lg: 16px;
             --radius-md: 10px;
-            --radius-sm: 6px;
-            --transition: all 0.3s ease;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; padding-bottom: 3rem; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 1rem; }
         .hidden { display: none !important; }
 
-        /* Header Navigation */
-        header.app-header {
-            background-color: rgba(28, 37, 65, 0.95);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
-            position: sticky; top: 0; z-index: 100;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+        .progress-bar-container { width: 100%; max-width: 700px; margin-bottom: 2rem; }
+        .progress-steps { display: flex; justify-content: space-between; position: relative; }
+        .progress-steps::before {
+            content: ''; position: absolute; top: 50%; left: 0; transform: translateY(-50%);
+            width: 100%; height: 4px; background: var(--border-color); z-index: 1;
         }
-        .brand-logo { display: flex; align-items: center; gap: 12px; font-size: 1.5rem; font-weight: 800; color: var(--accent-primary); text-decoration: none; }
-        .nav-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
-        .nav-btn {
-            background: transparent; color: var(--text-muted); border: 1px solid var(--border-color);
-            padding: 8px 16px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition);
-            display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.9rem;
+        .progress-line-fill {
+            position: absolute; top: 50%; left: 0; transform: translateY(-50%);
+            height: 4px; background: var(--accent-primary); z-index: 1; transition: var(--transition); width: 0%;
         }
-        .nav-btn:hover, .nav-btn.active { background: var(--accent-primary); color: #000; border-color: var(--accent-primary); }
+        .step-circle {
+            width: 44px; height: 44px; border-radius: 50%; background: var(--bg-card); border: 2px solid var(--border-color);
+            display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--text-muted);
+            position: relative; z-index: 2; transition: var(--transition); font-size: 0.95rem;
+        }
+        .step-circle.active { border-color: var(--accent-primary); color: var(--accent-primary); background: var(--bg-main); box-shadow: 0 0 15px var(--accent-glow); }
+        .step-circle.completed { background: var(--accent-primary); color: #000; border-color: var(--accent-primary); }
 
-        /* Main Container */
-        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-
-        /* Card System */
         .card {
-            background: var(--bg-card); border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+            padding: 2.2rem; width: 100%; max-width: 700px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            animation: fadeIn 0.4s ease-out;
         }
-        .card-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; color: var(--accent-primary); }
-        .card-subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem; }
 
-        /* Form & Control Styling */
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; }
-        .form-group { margin-bottom: 1.2rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.88rem; font-weight: 600; }
-        .form-control {
-            width: 100%; padding: 12px 14px; background: var(--bg-main); border: 1px solid var(--border-color);
-            border-radius: var(--radius-md); color: var(--text-main); outline: none; transition: var(--transition);
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .brand-header { text-align: center; margin-bottom: 1.8rem; }
+        .brand-header i { font-size: 2.6rem; color: var(--accent-primary); margin-bottom: 0.5rem; }
+        .brand-header h2 { font-size: 1.65rem; font-weight: 800; letter-spacing: -0.5px; }
+        .brand-header p { color: var(--text-muted); font-size: 0.88rem; margin-top: 0.3rem; }
+
+        .auth-toggle { display: flex; background: var(--bg-input); border-radius: var(--radius-md); margin-bottom: 1.5rem; border: 1px solid var(--border-color); overflow: hidden; }
+        .auth-tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; font-size: 0.9rem; font-weight: 700; color: var(--text-muted); transition: var(--transition); }
+        .auth-tab.active { background: var(--accent-primary); color: #000; }
+
+        .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+        .form-group { margin-bottom: 1.2rem; position: relative; }
+        .form-group label { display: block; margin-bottom: 0.4rem; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+        
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .input-wrapper i.input-icon { position: absolute; left: 14px; color: var(--text-muted); font-size: 0.95rem; z-index: 2; }
+        .input-wrapper .form-control { padding-left: 42px; }
+        
+        .password-toggle { position: absolute; right: 14px; color: var(--text-muted); cursor: pointer; font-size: 1rem; transition: var(--transition); z-index: 5; }
+        .password-toggle:hover { color: var(--accent-primary); }
+
+        .form-control, select.form-control {
+            width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: var(--radius-md); color: var(--text-main); font-size: 0.92rem; outline: none; transition: var(--transition);
         }
-        .form-control:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.2); }
+        .form-control:focus, select.form-control:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-glow); }
+        select.form-control option { background: var(--bg-card); color: var(--text-main); }
 
-        /* Button Styling */
         .btn {
-            padding: 12px 22px; border: none; border-radius: var(--radius-md); font-weight: 700;
-            cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem;
+            width: 100%; padding: 14px; border: none; border-radius: var(--radius-md); font-weight: 700;
+            font-size: 0.98rem; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px;
         }
+        .btn:disabled { background-color: #334155; color: #64748b; cursor: not-allowed; }
         .btn-primary { background: var(--accent-primary); color: #000; }
-        .btn-secondary { background: var(--accent-secondary); color: #fff; }
+        .btn-primary:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
         .btn-success { background: var(--accent-success); color: #fff; }
         .btn-warning { background: var(--accent-warning); color: #000; }
-        .btn-danger { background: var(--accent-danger); color: #fff; }
-        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
-        /* Badge Styling */
-        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-        .badge-pending { background: rgba(245, 158, 11, 0.2); color: var(--accent-warning); border: 1px solid var(--accent-warning); }
-        .badge-approved { background: rgba(16, 185, 129, 0.2); color: var(--accent-success); border: 1px solid var(--accent-success); }
-
-        /* Media Player Component */
-        .video-player-box { background: #000; border-radius: var(--radius-md); overflow: hidden; position: relative; margin-top: 1rem; border: 1px solid var(--border-color); }
-        video { width: 100%; max-height: 480px; display: block; }
-        .video-controls { padding: 12px; background: var(--bg-card); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-
-        /* Table Styling */
-        .table-responsive { overflow-x: auto; margin-top: 1rem; }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th, td { padding: 14px; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; }
-        th { background: var(--bg-main); color: var(--text-muted); font-weight: 600; }
-
-        /* AI Voice & Terminal Box */
-        .terminal-box {
-            background: #050a14; border: 1px solid var(--border-color); border-radius: var(--radius-md);
-            padding: 1.2rem; font-family: 'Courier New', Courier, monospace; color: #4cc9f0; min-height: 120px;
-            max-height: 250px; overflow-y: auto; margin-top: 1rem; white-space: pre-wrap;
+        .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+        .role-card {
+            background: var(--bg-input); border: 2px solid var(--border-color); border-radius: var(--radius-md);
+            padding: 1.2rem 1rem; text-align: center; cursor: pointer; transition: var(--transition);
         }
+        .role-card i { font-size: 2.2rem; color: var(--text-muted); margin-bottom: 0.5rem; transition: var(--transition); }
+        .role-card.selected { border-color: var(--accent-primary); background: rgba(56, 189, 248, 0.08); }
+        .role-card.selected i { color: var(--accent-primary); }
 
-        /* Toast Alerts */
-        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: var(--bg-card); color: #fff; padding: 1rem 1.5rem; border-left: 4px solid var(--accent-primary); border-radius: 6px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .bank-details-box { background: rgba(56, 189, 248, 0.05); border: 1px dashed var(--accent-primary); border-radius: var(--radius-md); padding: 1.2rem; margin-bottom: 1.5rem; }
+        .bank-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.88rem; }
+        .bank-row:last-child { margin-bottom: 0; }
+        .bank-label { color: var(--text-muted); }
+        .bank-val { font-weight: bold; color: var(--accent-primary); }
+
+        .ocr-box { background: #020617; border: 1px dashed var(--accent-primary); padding: 12px; border-radius: var(--radius-md); margin-top: 12px; font-size: 13px; }
+        .token-display { background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-success); color: #4ade80; padding: 12px; border-radius: var(--radius-md); margin-top: 16px; word-break: break-all; }
+        
+        #console-box { margin-top: 16px; background: #020617; color: var(--accent-primary); padding: 10px; border-radius: 6px; font-family: monospace; font-size: 11px; white-space: pre-wrap; max-height: 140px; overflow-y: auto; border: 1px solid var(--border-color); }
+        #preview-img { max-width: 100%; max-height: 120px; margin-top: 8px; border-radius: 4px; display: none; border: 1px solid var(--accent-primary); }
+
+        .live-alert-box { background: rgba(245, 158, 11, 0.1); border: 1px solid var(--accent-warning); border-radius: var(--radius-md); padding: 1rem; margin-top: 1.2rem; font-size: 0.85rem; color: #fbbf24; }
+        .timer-box { background: var(--bg-input); border: 1px solid var(--accent-success); border-radius: var(--radius-md); padding: 1.2rem; text-align: center; margin-bottom: 1.5rem; }
+        .timer-digit { font-size: 2rem; font-weight: 800; color: var(--accent-success); font-family: monospace; margin-top: 0.3rem; }
+
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; }
+        .toast { background: var(--bg-card); color: #fff; padding: 1rem 1.4rem; border-left: 4px solid var(--accent-primary); border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); margin-top: 10px; }
+        
+        @media (max-width: 600px) { .form-grid-2 { grid-template-columns: 1fr; gap: 0; } }
     </style>
+
+    <!-- LOAD MODULAR JAVASCRIPT FILES IN EXACT CHRONOLOGICAL ORDER -->
+    <script src="js/config.js" defer></script>
+    <script src="js/api.js" type="module" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/ui.js" defer></script>
+    <script src="js/theme.js" defer></script>
+    <script src="js/alert.js" defer></script>
+    <script src="js/main.js" defer></script>
 </head>
 <body>
 
-    <!-- APPLICATION HEADER NAVIGATION -->
-    <header class="app-header">
-        <a href="#" class="brand-logo">
-            <i class="fa-solid fa-microchip"></i>
-            <span>FixIt Enterprise Hub</span>
-        </a>
-        <div class="nav-tabs">
-            <button class="nav-btn active" onclick="App.switchTab('ai-diagnostics')"><i class="fa-solid fa-brain"></i> AI Diagnostics</button>
-            <button class="nav-btn" onclick="App.switchTab('video-hub')"><i class="fa-solid fa-circle-play"></i> Training Videos</button>
-            <button class="nav-btn" onclick="App.switchTab('payment-approval')"><i class="fa-solid fa-receipt"></i> Receipts & SMS</button>
-            <button class="nav-btn" onclick="App.switchTab('user-register')"><i class="fa-solid fa-user-plus"></i> Registration</button>
-            <button class="nav-btn" onclick="App.switchTab('admin-panel')"><i class="fa-solid fa-user-shield"></i> Admin Control</button>
+    <!-- PROGRESS BAR -->
+    <div class="progress-bar-container">
+        <div class="progress-steps">
+            <div class="progress-line-fill" id="progress-line"></div>
+            <div class="step-circle active" id="step-dot-1">1</div>
+            <div class="step-circle" id="step-dot-2">2</div>
+            <div class="step-circle" id="step-dot-3">3</div>
+            <div class="step-circle" id="step-dot-4">4</div>
         </div>
-    </header>
-
-    <div class="container">
-
-        <!-- TAB 1: AI DIAGNOSTIC ASSISTANT WITH VOICE SYNTHESIS -->
-        <section id="tab-ai-diagnostics" class="tab-content">
-            <div class="card">
-                <div class="card-title"><i class="fa-solid fa-robot"></i> AI Hardware Diagnostic Engine</div>
-                <div class="card-subtitle">Select hardware symptoms or speak into your microphone to run automated diagnostic routines.</div>
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Target Hardware Device</label>
-                        <select id="diag-device" class="form-control">
-                            <option value="smartphone">Smartphone / Tablet</option>
-                            <option value="laptop">Laptop / PC Logic Board</option>
-                            <option value="powerbank">Custom Lithium Power Bank</option>
-                            <option value="logic-gate">Transistor & Binary Decoder Circuit</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Observed Failure Pattern</label>
-                        <select id="diag-symptom" class="form-control">
-                            <option value="no-power">No Power / Dead Circuit</option>
-                            <option value="overheating">Thermal Throttling / Excessive Heat</option>
-                            <option value="short-circuit">VCC to GND Short Circuit</option>
-                            <option value="display-flicker">Display Signal Loss / Backlight Failure</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 10px; margin-top: 1rem; flex-wrap: wrap;">
-                    <button class="btn btn-primary" onclick="App.runAIDiagnostics()"><i class="fa-solid fa-magnifying-glass"></i> Run Automated Diagnostic</button>
-                    <button class="btn btn-secondary" onclick="App.startVoiceInput()"><i class="fa-solid fa-microphone"></i> Voice Command Input</button>
-                    <button class="btn btn-warning" onclick="App.speakLastReport()"><i class="fa-solid fa-volume-high"></i> Read Report Out Loud</button>
-                </div>
-
-                <div class="terminal-box" id="diag-terminal-output">> Diagnostic Engine Ready. Select parameters and click Run...</div>
-            </div>
-        </section>
-
-        <!-- TAB 2: HARDWARE REPAIR VIDEO TUTORIAL HUB -->
-        <section id="tab-video-hub" class="tab-content hidden">
-            <div class="card">
-                <div class="card-title"><i class="fa-solid fa-video"></i> Video Training & Hardware Demonstrations</div>
-                <div class="card-subtitle">Stream repair guides or load custom local MP4/WebM video files directly inside the hub.</div>
-
-                <div class="form-group">
-                    <label>Load Video via URL Stream or File Upload</label>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <input type="text" id="video-url-input" class="form-control" placeholder="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" style="flex: 1;">
-                        <button class="btn btn-primary" onclick="App.loadVideoURL()"><i class="fa-solid fa-link"></i> Stream URL</button>
-                        <input type="file" id="local-video-file" accept="video/*" class="hidden" onchange="App.loadLocalVideo(event)">
-                        <button class="btn btn-secondary" onclick="document.getElementById('local-video-file').click()"><i class="fa-solid fa-file-video"></i> Load Local Video</button>
-                    </div>
-                </div>
-
-                <div class="video-player-box">
-                    <video id="main-video-player" controls>
-                        <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
-                        Your browser does not support HTML5 video playback.
-                    </video>
-                    <div class="video-controls">
-                        <button class="btn btn-primary" onclick="document.getElementById('main-video-player').play()"><i class="fa-solid fa-play"></i> Play</button>
-                        <button class="btn btn-secondary" onclick="document.getElementById('main-video-player').pause()"><i class="fa-solid fa-pause"></i> Pause</button>
-                        <button class="btn btn-warning" onclick="document.getElementById('main-video-player').currentTime = 0"><i class="fa-solid fa-rotate-left"></i> Restart</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 3: RECEIPT VERIFICATION & SMS APPROVAL GATEWAY -->
-        <section id="tab-payment-approval" class="tab-content hidden">
-            <div class="card">
-                <div class="card-title"><i class="fa-solid fa-file-invoice-dollar"></i> Step 1: Submit Payment Slip for Approval</div>
-                <div class="card-subtitle">Upload transfer receipt details. Once confirmed by administration, an SMS approval code and GitHub link will be dispatched.</div>
-
-                <form onsubmit="App.handleReceiptSubmission(event)">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Full Customer Name</label>
-                            <input type="text" id="cust-name" class="form-control" placeholder="e.g. Godfrey Anthony" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Phone Number (Receives SMS Code)</label>
-                            <input type="tel" id="cust-phone" class="form-control" placeholder="+2348000000000" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Bank Reference / Transaction ID</label>
-                            <input type="text" id="cust-ref" class="form-control" placeholder="TXN-99403218" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Receipt Proof Document</label>
-                            <input type="file" id="cust-slip-file" class="form-control" accept="image/*,.pdf" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary" style="margin-top: 1rem;"><i class="fa-solid fa-paper-plane"></i> Submit Slip for Verification</button>
-                </form>
-            </div>
-
-            <!-- UNLOCK ACCESS FORM -->
-            <div class="card">
-                <div class="card-title"><i class="fa-solid fa-shield-cat"></i> Step 2: Unlock Access via SMS Verification Code</div>
-                <div class="card-subtitle">Enter the 6-digit verification code sent to your mobile phone after receipt confirmation.</div>
-
-                <form onsubmit="App.handleCodeActivation(event)">
-                    <div class="form-group">
-                        <label>6-Digit Security Code</label>
-                        <input type="text" id="activation-code-input" class="form-control" placeholder="e.g. 849201">
-                    </div>
-                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-lock-open"></i> Unlock GitHub Destination Repository</button>
-                </form>
-
-                <div id="github-link-container" class="hidden" style="margin-top: 1.5rem; background: var(--bg-main); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--accent-success);">
-                    <h4 style="color: var(--accent-success);"><i class="fa-brands fa-github"></i> Authorized GitHub Destination Repository:</h4>
-                    <a id="github-url-display" href="#" target="_blank" style="color: var(--accent-primary); word-break: break-all; text-decoration: underline; margin-top: 5px; display: inline-block;"></a>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 4: CUSTOMER & REPAIRER USER REGISTRATION -->
-        <section id="tab-user-register" class="tab-content hidden">
-            <div class="card">
-                <div class="card-title"><i class="fa-solid fa-id-card"></i> Platform Portal Registration</div>
-                <div class="card-subtitle">Create account profiles for both customers seeking repair services and qualified hardware repair technicians.</div>
-
-                <form onsubmit="App.handleUserRegistration(event)">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Account Class</label>
-                            <select id="reg-role" class="form-control">
-                                <option value="Customer">Customer / Client</option>
-                                <option value="Repairer">Repairer / Hardware Technician</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Username / Handle</label>
-                            <input type="text" id="reg-username" class="form-control" placeholder="godfrey_tech" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Email Address</label>
-                            <input type="email" id="reg-email" class="form-control" placeholder="user@domain.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" id="reg-password" class="form-control" placeholder="••••••••••••" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-secondary" style="margin-top: 1rem;"><i class="fa-solid fa-user-check"></i> Complete Registration</button>
-                </form>
-            </div>
-        </section>
-
-        <!-- TAB 5: ADMIN CONTROL CONSOLE (APPROVE SLIPS & SEND LIVE SMS) -->
-        <section id="tab-admin-panel" class="tab-content hidden">
-            <div class="card" style="border: 2px solid var(--accent-warning);">
-                <div class="card-title" style="color: var(--accent-warning);"><i class="fa-solid fa-user-shield"></i> Master Administrator Control Panel</div>
-                <div class="card-subtitle">Audit submitted payment receipts, confirm transaction authenticity, and trigger automatic SMS dispatch.</div>
-
-                <div class="form-group" style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-md);">
-                    <label>Live Termii / Twilio SMS API Key Hook (Optional)</label>
-                    <input type="password" id="sms-api-key" class="form-control" placeholder="Paste API Key here for live SMS dispatch (Defaults to built-in simulation)">
-                </div>
-
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Customer</th>
-                                <th>Phone</th>
-                                <th>Ref ID</th>
-                                <th>File Slip</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-receipts-table">
-                            <!-- Populated Dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
     </div>
 
+    <!-- PAGE 1: USER AUTH -->
+    <div id="page-1" class="card">
+        <div class="brand-header">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <h2>G-Tech Cloud Portal</h2>
+            <p>Page 1 of 4: Secure Cloud Account Setup</p>
+        </div>
+        <div class="auth-toggle">
+            <div class="auth-tab active" id="tab-signup" onclick="Portal.switchAuthMode('signup')">Create Account</div>
+            <div class="auth-tab" id="tab-login" onclick="Portal.switchAuthMode('login')">Log In</div>
+        </div>
+        <form id="form-page-1" onsubmit="Portal.handlePage1Submit(event)">
+            <div class="form-grid-2" id="grid-username-email">
+                <div class="form-group signup-only">
+                    <label for="p1-username">Username / Handle</label>
+                    <div class="input-wrapper"><i class="fa-solid fa-user input-icon"></i><input type="text" id="p1-username" class="form-control" placeholder="e.g. godfrey_tech" required></div>
+                </div>
+                <div class="form-group">
+                    <label for="p1-email">Email Address</label>
+                    <div class="input-wrapper"><i class="fa-solid fa-envelope input-icon"></i><input type="email" id="p1-email" class="form-control" value="godfreyanthony3245.eng@gmail.com" required></div>
+                </div>
+            </div>
+            <div class="form-group signup-only">
+                <label for="p1-phone">Mobile Phone Number</label>
+                <div class="input-wrapper"><i class="fa-solid fa-phone input-icon"></i><input type="tel" id="p1-phone" class="form-control" placeholder="08012345678" required></div>
+            </div>
+            <div class="form-grid-2" id="grid-passwords">
+                <div class="form-group">
+                    <label for="p1-password">Password (Min. 8 chars)</label>
+                    <div class="input-wrapper"><i class="fa-solid fa-lock input-icon"></i><input type="password" id="p1-password" class="form-control" required><i class="fa-solid fa-eye password-toggle" onclick="Portal.togglePasswordVisibility('p1-password', this)"></i></div>
+                </div>
+                <div class="form-group signup-only">
+                    <label for="p1-confirm-password">Confirm Password</label>
+                    <div class="input-wrapper"><i class="fa-solid fa-lock input-icon"></i><input type="password" id="p1-confirm-password" class="form-control" required><i class="fa-solid fa-eye password-toggle" onclick="Portal.togglePasswordVisibility('p1-confirm-password', this)"></i></div>
+                </div>
+            </div>
+            <button type="submit" id="btn-page-1-submit" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Proceed to Role & Location</button>
+        </form>
+    </div>
+
+    <!-- PAGE 2: LOCATION -->
+    <div id="page-2" class="card hidden">
+        <div class="brand-header"><i class="fa-solid fa-sliders"></i><h2>Profile Category & Location</h2></div>
+        <form id="form-page-2" onsubmit="Portal.handlePage2Submit(event)">
+            <div class="role-grid">
+                <div class="role-card selected" id="role-cust-card" onclick="Portal.selectRole('Customer')"><i class="fa-solid fa-user-gear"></i><h4>Customer</h4></div>
+                <div class="role-card" id="role-tech-card" onclick="Portal.selectRole('Repairer')"><i class="fa-solid fa-screwdriver-wrench"></i><h4>Repairer Engineer</h4></div>
+            </div>
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label for="p2-country">Country</label>
+                    <div class="input-wrapper"><i class="fa-solid fa-globe input-icon"></i><select id="p2-country" class="form-control" onchange="Portal.onCountryChange()" required><option value="Nigeria">Nigeria</option><option value="Ghana">Ghana</option><option value="Other">Other</option></select></div>
+                </div>
+                <div class="form-group">
+                    <label for="p2-state">State / Province</label>
+                    <div class="input-wrapper"><i class="fa-solid fa-map-location-dot input-icon"></i><select id="p2-state" class="form-control" onchange="Portal.onStateChange()" required></select></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="p2-lga">Local Government Area</label>
+                <div class="input-wrapper"><i class="fa-solid fa-city input-icon"></i><select id="p2-lga" class="form-control" required></select></div>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Save Location & Proceed to Payment</button>
+        </form>
+    </div>
+
+    <!-- PAGE 3: PAYMENT SLIP & OCR SCANNING -->
+    <div id="page-3" class="card hidden">
+        <div class="brand-header"><i class="fa-solid fa-building-columns"></i><h2>Subscription Bank Deposit & OCR Verification</h2></div>
+        
+        <div class="bank-details-box">
+            <div class="bank-row"><span class="bank-label">Bank:</span><span class="bank-val">G-Tech Enterprise Bank</span></div>
+            <div class="bank-row"><span class="bank-label">Account Number:</span><span class="bank-val">0192837465</span></div>
+            <div class="bank-row"><span class="bank-label">Fee:</span><span class="bank-val">₦150</span></div>
+        </div>
+
+        <form id="slip-form" onsubmit="Portal.handlePage3Submit(event)">
+            <div class="form-group">
+                <label for="slip_file">Upload Payment Slip from Gallery</label>
+                <div class="input-wrapper"><i class="fa-solid fa-file-arrow-up input-icon"></i><input type="file" id="slip_file" class="form-control" accept="image/*" required onchange="Portal.handleFileUpload(event)"></div>
+                <img id="preview-img" alt="Gallery Slip Preview">
+            </div>
+
+            <!-- Live OCR Output Display -->
+            <div class="ocr-box">
+                <strong>Extracted Transaction ID / Numbers:</strong>
+                <div id="ocr-result" style="color: #38bdf8; margin-top: 4px;">No image scanned yet...</div>
+            </div>
+
+            <button type="submit" id="send-btn" class="btn btn-primary" style="margin-top: 1rem;" disabled><i class="fa-solid fa-paper-plane"></i> Scan Image & Submit for Verification</button>
+        </form>
+
+        <!-- Step 2: Verification Key Entry -->
+        <div id="verify-section" style="display:none; margin-top: 20px; background: #020617; padding: 16px; border-radius: 8px; border: 1px solid #334155;">
+            <label for="admin_code" style="color: #38bdf8; font-size: 13px;">Enter Admin Approval Code (Sent after verification):</label>
+            <input type="text" id="admin_code" class="form-control" placeholder="e.g. 782910" maxlength="6" style="text-align: center; font-size: 18px; letter-spacing: 4px; margin-top: 8px;">
+            <button type="button" id="verify-btn" class="btn btn-success" style="margin-top: 10px;" onclick="Portal.verifyAdminCode()"><i class="fa-solid fa-shield-check"></i> Verify Admin Code & Grant Token</button>
+        </div>
+
+        <div id="console-box">System ready. Select a payment slip photo...</div>
+
+        <div class="live-alert-box">
+            <p><i class="fa-solid fa-bell"></i> Admin Notification Engine:</p>
+            <button class="btn btn-warning" onclick="Portal.triggerGmailNotification()" id="gmail-btn" style="margin-top: 0.8rem;"><i class="fa-solid fa-envelope"></i> Send Real Gmail Notification to Owner</button>
+        </div>
+    </div>
+
+    <!-- PAGE 4: SUCCESS TOKEN & TIMER -->
+    <div id="page-4" class="card hidden">
+        <div class="brand-header"><i class="fa-solid fa-shield-check" style="color: var(--accent-success);"></i><h2>Activation Complete</h2></div>
+        
+        <div id="token-display" class="token-display" style="display:none; margin-bottom: 1rem;">
+            <strong>STATUS: TRANSACTION VERIFIED!</strong><br>
+            <span id="token-text"></span>
+        </div>
+
+        <div id="activation-status-box">
+            <div class="timer-box"><div style="font-size: 0.85rem;">Cloud Status: Active</div><div class="timer-digit" id="countdown-timer">30d 00h 00m 00s</div></div>
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-success); padding: 1.2rem; border-radius: var(--radius-md); text-align: center;">
+                <h4 style="color: var(--accent-success); margin-bottom: 0.5rem;">Secure Cloud Account Permanent!</h4>
+                <a href="https://github.com/godfreyanthony3245eng-lab" target="_blank" style="color: var(--accent-primary);">Enter Lab Repository</a>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="compressor-canvas" style="display:none;"></canvas>
     <div id="toast-container"></div>
-
-    <!-- ENGINE JAVASCRIPT LOGIC -->
-    <script>
-        const App = {
-            DB_SLIPS: 'fixit_slips_db_v2',
-            DB_USERS: 'fixit_users_db_v2',
-            githubRepoUrl: 'https://github.com/godfreyanthony3245eng-lab',
-            lastDiagnosticReport: '',
-
-            init: function() {
-                if (!localStorage.getItem(this.DB_SLIPS)) localStorage.setItem(this.DB_SLIPS, JSON.stringify([]));
-                if (!localStorage.getItem(this.DB_USERS)) localStorage.setItem(this.DB_USERS, JSON.stringify([]));
-                this.renderAdminTable();
-            },
-
-            showToast: function(msg) {
-                const container = docu
+</body>
+</html>
