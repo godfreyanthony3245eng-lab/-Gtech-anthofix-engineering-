@@ -1,0 +1,16 @@
+// Card Theme Styling & Role Selection Dynamics
+window.ThemeHandler = {
+    selectRole: function(r) { 
+        Portal.selectedRole = r;
+        const custCard = document.getElementById('role-cust-card');
+        const techCard = document.getElementById('role-tech-card');
+        
+        if(r === 'Customer') {
+            custCard?.classList.add('selected');
+            techCard?.classList.remove('selected');
+        } else {
+            techCard?.classList.add('selected');
+            custCard?.classList.remove('selected');
+        }
+    }
+};
